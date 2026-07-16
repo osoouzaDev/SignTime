@@ -1,12 +1,20 @@
-import { Controller, Get } from '@nestjs/common';
-import { AppService } from './app.service';
+import { Controller, Get } from "@nestjs/common";
 
 @Controller()
 export class AppController {
-  constructor(private readonly appService: AppService) {}
-
   @Get()
-  getHello(): string {
-    return this.appService.getHello();
+  verificarApi() {
+    return {
+      nome: "Sistema de Contratos",
+      status: "online",
+      data: new Date().toISOString(),
+    };
+  }
+
+  @Get("health")
+  verificarSaude() {
+    return {
+      status: "ok",
+    };
   }
 }
