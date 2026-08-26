@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Acesso seguro ao SignTime." />
+    <title>Entrar — SignTime</title>
+    <link rel="stylesheet" href="/styles.css" />
+    <link rel="stylesheet" href="/auth.css" />
+  </head>
+  <body class="login-page">
+    <main class="login-shell">
+      <section class="login-intro" aria-labelledby="login-brand-title">
+        <a class="brand login-brand" href="/login" aria-label="SignTime">
+          <span class="brand-mark" aria-hidden="true">
+            <img src="/signtime-logo.png" alt="" />
+          </span>
+          <span>
+            <strong>SignTime</strong>
+            <small>Contratos inteligentes</small>
+          </span>
+        </a>
+        <div class="login-intro-copy">
+          <p class="eyebrow">Ambiente protegido</p>
+          <h1 id="login-brand-title">Seus contratos no tempo certo.</h1>
+          <p>
+            Acesse para gerar contratos em lote com segurança, organização e
+            a identidade visual do SignTime.
+          </p>
+        </div>
+        <div class="login-security-note">
+          <span aria-hidden="true">✓</span>
+          <p><strong>Acesso individual</strong><small>Sua sessão expira automaticamente.</small></p>
+        </div>
+      </section>
+
+      <section class="login-card" aria-labelledby="login-title">
+        <div class="login-card-heading">
+          <p class="section-kicker">Bem-vindo</p>
+          <h2 id="login-title">Entre no SignTime</h2>
+          <p>Use o acesso fornecido pelo administrador.</p>
+        </div>
+
+        <form id="login-form" novalidate>
+          <label class="login-field">
+            <span>Usuário</span>
+            <input
+              id="login-username"
+              name="username"
+              type="text"
+              autocomplete="username"
+              maxlength="80"
+              required
+              autofocus
+            />
+          </label>
+          <label class="login-field">
+            <span>Senha</span>
+            <input
+              id="login-password"
+              name="password"
+              type="password"
+              autocomplete="current-password"
+              maxlength="256"
+              required
+            />
+          </label>
+
+          <div class="login-error" id="login-error" role="alert" hidden></div>
+
+          <button class="primary-button login-button" id="login-button" type="submit">
+            <span>Entrar com segurança</span>
+            <i aria-hidden="true"></i>
+          </button>
+        </form>
+
+        <p class="login-help">
+          Não possui acesso? Solicite seu usuário ao administrador do SignTime.
+        </p>
+      </section>
+    </main>
+    <script src="/login.js" defer></script>
+  </body>
+</html>

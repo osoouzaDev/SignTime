@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Administração de usuários do SignTime." />
+    <title>Usuários — SignTime</title>
+    <link rel="stylesheet" href="/styles.css" />
+    <link rel="stylesheet" href="/auth.css" />
+    <link rel="stylesheet" href="/admin.css" />
+  </head>
+  <body class="admin-page">
+    <div class="admin-shell">
+      <header class="topbar admin-topbar">
+        <a class="brand" href="/" aria-label="SignTime — início">
+          <span class="brand-mark" aria-hidden="true"><img src="/signtime-logo.png" alt="" /></span>
+          <span><strong>SignTime</strong><small>Administração</small></span>
+        </a>
+        <div class="topbar-account">
+          <a class="admin-back-link" href="/">Gerar contratos</a>
+          <div class="session-identity" title="Sessão de administrador">
+            <span class="session-avatar" id="session-avatar" aria-hidden="true">ST</span>
+            <span class="session-copy">
+              <strong id="session-user">Administrador</strong>
+              <small>Administrador</small>
+            </span>
+          </div>
+          <button class="logout-button" id="logout-button" type="button">Sair</button>
+        </div>
+      </header>
+
+      <main class="admin-main">
+        <section class="admin-heading" aria-labelledby="admin-title">
+          <div>
+            <p class="eyebrow">Controle de acesso</p>
+            <h1 id="admin-title">Usuários do SignTime</h1>
+            <p>Cadastre pessoas, defina permissões e controle quem pode acessar o sistema.</p>
+          </div>
+          <button class="primary-button admin-new-button" id="new-user-button" type="button">
+            <span aria-hidden="true">+</span> Novo usuário
+          </button>
+        </section>
+
+        <section class="admin-stats" aria-label="Resumo de usuários">
+          <article><span>Total</span><strong id="stat-total">—</strong><small>usuários cadastrados</small></article>
+          <article><span>Ativos</span><strong id="stat-active">—</strong><small>com acesso liberado</small></article>
+          <article><span>Administradores</span><strong id="stat-admins">—</strong><small>com gestão de usuários</small></article>
+          <article><span>Desativados</span><strong id="stat-inactive">—</strong><small>sem acesso ao sistema</small></article>
+        </section>
+
+        <section class="users-card" aria-labelledby="users-list-title">
+          <div class="users-card-heading">
+            <div>
+              <p class="section-kicker">Acessos</p>
+              <h2 id="users-list-title">Pessoas cadastradas</h2>
+            </div>
+            <div class="users-filters">
+              <label class="search-field">
+                <span class="sr-only">Buscar usuários</span>
+                <input id="user-search" type="search" placeholder="Buscar por nome, usuário ou e-mail" />
+              </label>
+              <label>
+                <span class="sr-only">Filtrar por perfil</span>
+                <select id="role-filter">
+                  <option value="all">Todos os perfis</option>
+                  <option value="admin">Administradores</option>
+                  <option value="user">Usuários</option>
+                </select>
+              </label>
+              <label>
+                <span class="sr-only">Filtrar por situação</span>
+                <select id="status-filter">
+                  <option value="all">Todas as situações</option>
+                  <option value="active">Ativos</option>
+                  <option value="inactive">Desativados</option>
+                </select>
+              </label>
+            </div>
+          </div>
+
+          <div class="users-loading" id="users-loading" role="status">
+            <span class="spinner" aria-hidden="true"></span> Carregando usuários…
+          </div>
+          <div class="users-table-wrap" id="users-table-wrap" hidden>
+            <table class="users-table">
+              <thead>
+                <tr>
+                  <th>Pessoa</th>
+                  <th>Perfil</th>
+                  <th>Situação</th>
+                  <th>Último acesso</th>
+                  <th><span class="sr-only">Ações</span></th>
+                </tr>
+              </thead>
+              <tbody id="users-table-body"></tbody>
+            </table>
+            <div class="users-empty" id="users-empty" hidden>
+              <strong>Nenhum usuário encontrado</strong>
+              <span>Ajuste os filtros ou cadastre um novo acesso.</span>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <dialog class="admin-dialog" id="user-dialog">
+      <form id="user-form">
+        <div class="dialog-heading">
+          <div>
+            <p class="section-kicker" id="dialog-kicker">Novo acesso</p>
+            <h2 id="dialog-title">Cadastrar usuário</h2>
+          </div>
+          <button class="dialog-close" id="dialog-close" type="button" aria-label="Fechar">×</button>
+        </div>
+
+        <div class="dialog-fields">
+          <label class="admin-field admin-field-wide">
+            <span>Nome completo</span>
+            <input id="user-full-name" name="full_name" type="text" maxlength="160" required />
+          </label>
+          <label class="admin-field">
+            <span>Usuário</span>
+            <input id="user-username" name="username" type="text" maxlength="80" autocomplete="off" required />
+          </label>
+          <label class="admin-field">
+            <span>E-mail <small>opcional</small></span>
+            <input id="user-email" name="email" type="email" maxlength="320" autocomplete="off" />
+          </label>
+          <label class="admin-field">
+            <span>Perfil</span>
+            <select id="user-role" name="role" required>
+              <option value="user">Usuário</option>
+              <option value="admin">Administrador</option>
+            </select>
+          </label>
+          <label class="admin-field">
+            <span id="password-label">Senha</span>
+            <input id="user-password" name="password" type="password" minlength="12" maxlength="256" autocomplete="new-password" />
+            <small id="password-help">Use pelo menos 12 caracteres.</small>
+          </label>
+        </div>
+
+        <div class="dialog-error" id="dialog-error" role="alert" hidden></div>
+        <div class="dialog-actions">
+          <button class="secondary-button" id="dialog-cancel" type="button">Cancelar</button>
+          <button class="primary-button dialog-save" id="dialog-save" type="submit">
+            <span>Salvar usuário</span><i aria-hidden="true"></i>
+          </button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog class="confirm-dialog" id="delete-dialog">
+      <div class="confirm-icon" aria-hidden="true">!</div>
+      <h2>Excluir usuário?</h2>
+      <p id="delete-message">Esta ação removerá o acesso e encerrará todas as sessões da pessoa.</p>
+      <div class="dialog-actions">
+        <button class="secondary-button" id="delete-cancel" type="button">Cancelar</button>
+        <button class="danger-button" id="delete-confirm" type="button">Excluir definitivamente</button>
+      </div>
+    </dialog>
+
+    <div class="toast" id="admin-toast" role="status" hidden>
+      <span id="admin-toast-message"></span>
+      <button id="admin-toast-close" type="button" aria-label="Fechar">×</button>
+    </div>
+
+    <script src="/admin.js" defer></script>
+  </body>
+</html>

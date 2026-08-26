@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="Gere contratos em lote a partir de um modelo Word e uma planilha Excel."
+    />
+    <title>SignTime</title>
+    <link rel="stylesheet" href="/styles.css" />
+    <link rel="stylesheet" href="/auth.css" />
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="topbar">
+        <a class="brand" href="/" aria-label="SignTime — início">
+          <span class="brand-mark" aria-hidden="true"><img src="/signtime-logo.png" alt="" /></span>
+          <span>
+            <strong>SignTime</strong>
+            <small>Contratos inteligentes</small>
+          </span>
+        </a>
+        <div class="topbar-account">
+          <a class="admin-panel-link" id="admin-panel-link" href="/admin" hidden>
+            Gerenciar usuários
+          </a>
+          <div class="session-identity" title="Sessão protegida">
+            <span class="session-avatar" id="session-avatar" aria-hidden="true">ST</span>
+            <span class="session-copy">
+              <strong id="session-user">Usuário</strong>
+              <small id="session-role">Acesso protegido</small>
+            </span>
+          </div>
+          <button class="logout-button" id="logout-button" type="button">Sair</button>
+        </div>
+      </header>
+
+      <main class="workspace">
+        <aside class="hero-copy">
+          <p class="eyebrow">Geração em lote</p>
+          <h1>Contratos prontos em poucos minutos.</h1>
+          <p class="hero-description">
+            Envie seu modelo Word e a planilha. O sistema confere as variáveis,
+            gera um contrato por linha e reúne tudo em um único ZIP.
+          </p>
+
+          <ol class="journey" aria-label="Etapas do processo">
+            <li class="journey-item is-active" data-journey="1">
+              <span>1</span>
+              <div><strong>Arquivos</strong><small>Modelo e planilha</small></div>
+            </li>
+            <li class="journey-item" data-journey="2">
+              <span>2</span>
+              <div><strong>Conferência</strong><small>Variáveis e opções</small></div>
+            </li>
+            <li class="journey-item" data-journey="3">
+              <span>3</span>
+              <div><strong>Resultado</strong><small>ZIP para download</small></div>
+            </li>
+          </ol>
+
+          <div class="tip-card">
+            <span class="tip-label">Como preparar</span>
+            <p>
+              No Word, use variáveis como <code>{{ nome_cliente }}</code>. Na
+              planilha, cada linha deve representar um contrato.
+            </p>
+          </div>
+        </aside>
+
+        <section class="generator-card" aria-labelledby="generator-title">
+          <div class="card-heading">
+            <div>
+              <p class="section-kicker">Novo lote</p>
+              <h2 id="generator-title">Monte seus contratos</h2>
+            </div>
+            <button class="text-button" id="reset-button" type="button" hidden>
+              Começar de novo
+            </button>
+          </div>
+
+          <section class="step-section" aria-labelledby="files-title">
+            <div class="step-heading">
+              <span class="step-number">01</span>
+              <div>
+                <h3 id="files-title">Adicione os arquivos</h3>
+                <p>O conteúdo original e a formatação do Word serão preservados.</p>
+              </div>
+            </div>
+
+            <a
+              class="template-download"
+              href="/modelo-planilha-signtime.xlsx"
+              download="modelo_planilha_signtime.xlsx"
+              aria-label="Baixar a planilha modelo do SignTime"
+            >
+              <span class="template-download-icon" aria-hidden="true">↓</span>
+              <span class="template-download-copy">
+                <strong>Precisa de uma planilha para começar?</strong>
+                <small>Baixe o modelo, preencha uma pessoa por linha e envie abaixo.</small>
+              </span>
+              <span class="template-download-action">Baixar modelo</span>
+            </a>
+
+            <div class="upload-grid">
+              <label class="dropzone" id="template-zone" for="template-input">
+                <input id="template-input" type="file" accept=".docx" />
+                <span class="upload-symbol" aria-hidden="true">W</span>
+                <span class="upload-copy">
+                  <strong>Modelo do contrato</strong>
+                  <small>Arquivo Word .docx • até 25 MB</small>
+                </span>
+                <span class="upload-action">Selecionar</span>
+              </label>
+
+              <label class="dropzone" id="spreadsheet-zone" for="spreadsheet-input">
+                <input id="spreadsheet-input" type="file" accept=".xlsx,.csv" />
+                <span class="upload-symbol spreadsheet-symbol" aria-hidden="true">X</span>
+                <span class="upload-copy">
+                  <strong>Planilha com os dados</strong>
+                  <small>Excel .xlsx ou .csv • até 25 MB</small>
+                </span>
+                <span class="upload-action">Selecionar</span>
+              </label>
+            </div>
+          </section>
+
+          <div class="analysis-loading" id="analysis-loading" hidden aria-live="polite">
+            <span class="spinner" aria-hidden="true"></span>
+            <div><strong>Conferindo os arquivos</strong><small>Isso leva só alguns segundos.</small></div>
+          </div>
+
+          <section class="review-section" id="review-section" hidden>
+            <div class="section-divider"></div>
+            <div class="step-heading">
+              <span class="step-number">02</span>
+              <div>
+                <h3>Confira as informações</h3>
+                <p>Já associamos o que encontramos. Ajuste apenas se necessário.</p>
+              </div>
+            </div>
+
+            <div class="summary-strip" aria-label="Resumo dos arquivos">
+              <div><strong id="row-count">0</strong><span>contratos</span></div>
+              <div><strong id="variable-count">0</strong><span>variáveis</span></div>
+              <div><strong id="mapping-count">0</strong><span>associadas</span></div>
+            </div>
+
+            <label class="field sheet-field" id="sheet-field" hidden>
+              <span>Aba da planilha</span>
+              <select id="sheet-select"></select>
+            </label>
+
+            <div class="mapping-card">
+              <div class="mapping-heading">
+                <div>
+                  <strong>Variáveis do modelo</strong>
+                  <small>Escolha de qual coluna virá cada informação.</small>
+                </div>
+                <span class="status-legend"><i></i> Associação automática</span>
+              </div>
+              <div class="mapping-list" id="mapping-list"></div>
+            </div>
+
+            <div class="options-grid">
+              <fieldset class="field output-field">
+                <legend>Formato dos contratos</legend>
+                <div class="segmented-control">
+                  <label><input type="radio" name="format" value="pdf" checked /><span>PDF</span></label>
+                  <label><input type="radio" name="format" value="docx" /><span>Word</span></label>
+                  <label><input type="radio" name="format" value="both" /><span>Ambos</span></label>
+                </div>
+              </fieldset>
+              <label class="field">
+                <span>Nome de cada arquivo</span>
+                <select id="filename-variable"></select>
+              </label>
+            </div>
+
+            <details class="advanced-panel" id="clicksign-panel">
+              <summary>
+                <span>
+                  <strong>Enviar para assinatura na Clicksign</strong>
+                  <small>Opcional • desligado por padrão</small>
+                </span>
+                <span class="chevron" aria-hidden="true">⌄</span>
+              </summary>
+              <div class="advanced-content">
+                <label class="toggle-row">
+                  <span class="toggle-copy">
+                    <strong>Enviar após gerar</strong>
+                    <small id="clicksign-status">Verificando configuração…</small>
+                  </span>
+                  <input id="clicksign-enabled" type="checkbox" />
+                  <span class="toggle" aria-hidden="true"></span>
+                </label>
+                <div class="clicksign-options" id="clicksign-options" hidden>
+                  <label class="field">
+                    <span>Ambiente</span>
+                    <select id="clicksign-environment">
+                      <option value="sandbox">Teste (sandbox)</option>
+                      <option value="production">Produção</option>
+                    </select>
+                  </label>
+                  <label class="field token-field" id="clicksign-token-field">
+                    <span>Token de acesso</span>
+                    <input
+                      id="clicksign-token"
+                      type="password"
+                      autocomplete="off"
+                      placeholder="Cole o token da Clicksign"
+                    />
+                  </label>
+                  <label class="confirmation-row">
+                    <input id="clicksign-confirmed" type="checkbox" />
+                    <span>Confirmo que os signatários e e-mails da planilha estão corretos.</span>
+                  </label>
+                </div>
+              </div>
+            </details>
+
+            <button class="primary-button" id="generate-button" type="button">
+              <span class="button-label">Gerar contratos e baixar ZIP</span>
+              <span class="button-progress" aria-hidden="true"></span>
+            </button>
+            <p class="button-note">Nenhum arquivo enviado fica armazenado no sistema.</p>
+          </section>
+
+          <section class="result-section" id="result-section" hidden aria-live="polite">
+            <div class="result-icon" aria-hidden="true">✓</div>
+            <p class="section-kicker">Lote concluído</p>
+            <h3>Seus contratos estão prontos.</h3>
+            <p id="result-message">O ZIP foi preparado e o download começou.</p>
+            <div class="result-actions">
+              <a class="primary-button download-button" id="download-again" href="#" download="contratos_gerados.zip">
+                Baixar ZIP novamente
+              </a>
+              <button class="secondary-button" id="new-batch-button" type="button">Criar outro lote</button>
+            </div>
+          </section>
+        </section>
+      </main>
+    </div>
+
+    <div class="toast" id="toast" role="alert" hidden>
+      <span class="toast-icon">!</span>
+      <div><strong>Não foi possível continuar</strong><p id="toast-message"></p></div>
+      <button id="toast-close" type="button" aria-label="Fechar aviso">×</button>
+    </div>
+
+    <script src="/app.js" defer></script>
+  </body>
+</html>
