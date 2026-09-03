@@ -52,3 +52,10 @@ Na tela, escolha o ambiente de teste ou produção e confirme os dados antes do 
 - Até 2.000 contratos por lote.
 - O serviço abre apenas no próprio computador (`127.0.0.1`).
 - Os arquivos temporários são apagados após a criação do ZIP.
+
+## Executável portátil
+
+Para distribuir somente o `SignTime.exe`, publique primeiro o backend de
+autenticação e gere o arquivo com a URL HTTPS recebida. O passo a passo está em
+`IMPLANTACAO_BACKEND.md`. A credencial do PostgreSQL nunca deve acompanhar o
+executável.

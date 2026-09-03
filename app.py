@@ -43,6 +43,14 @@ from auth.service import (
     session_duration_seconds,
     validate_csrf,
 )
+from auth.remote_client import (
+    RemoteAPIError,
+    remote_admin_request,
+    remote_auth_enabled,
+    remote_find_active_session,
+    remote_login,
+    remote_logout,
+)
 from contratos import ContractError, analyze_inputs, generate_contracts_zip
 
 
@@ -308,7 +316,12 @@ class ContractHandler(BaseHTTPRequestHandler):
         if hasattr(self, "_cached_auth_session"):
             return self._cached_auth_session
         token = self._cookie_value(SESSION_COOKIE)
-        self._cached_auth_session = find_active_session(token) if token else None
+        if not token:
+            self._cached_auth_session = None
+        elif remote_auth_enabled():
+            self._cached_auth_session = remote_find_active_session(token)
+        else:
+            self._cached_auth_session = find_active_session(token)
         return self._cached_auth_session
 
     def _require_session(self) -> ActiveSession | None:
@@ -320,10 +333,9 @@ class ContractHandler(BaseHTTPRequestHandler):
     def _valid_csrf(self, session: ActiveSession) -> bool:
         header_token = self.headers.get("X-CSRF-Token", "")
         cookie_token = self._cookie_value(CSRF_COOKIE)
-        return (
-            bool(header_token)
-            and header_token == cookie_token
-            and validate_csrf(session, header_token)
+        tokens_match = bool(header_token) and header_token == cookie_token
+        return tokens_match and (
+            remote_auth_enabled() or validate_csrf(session, header_token)
         )
 
     def _client_key(self) -> str:
@@ -347,12 +359,50 @@ class ContractHandler(BaseHTTPRequestHandler):
             return False
         return True
 
+    def _remote_admin_call(
+        self,
+        method: str,
+        path: str,
+        payload: dict | None = None,
+    ):
+        try:
+            return remote_admin_request(
+                method,
+                path,
+                session_token=self._cookie_value(SESSION_COOKIE),
+                csrf_token=self.headers.get("X-CSRF-Token", ""),
+                payload=payload,
+            )
+        except RemoteAPIError as exc:
+            self._send_error(str(exc), exc.status_code)
+            return None
+
     def _handle_admin_users_list(self) -> None:
+        if remote_auth_enabled():
+            response = self._remote_admin_call("GET", "/v1/admin/users")
+            if response is not None:
+                self._send_json(response.payload, response.status_code)
+            return
         users = [user.to_dict() for user in list_managed_users()]
         self._send_json({"users": users, "count": len(users)})
 
     def _handle_admin_user_create(self) -> None:
         payload = self._read_json(max_bytes=64 * 1024)
+        if remote_auth_enabled():
+            response = self._remote_admin_call(
+                "POST",
+                "/v1/admin/users",
+                payload={
+                    "username": str(payload.get("username", "")),
+                    "password": str(payload.get("password", "")),
+                    "full_name": str(payload.get("full_name", "")),
+                    "email": str(payload.get("email", "")).strip() or None,
+                    "role": str(payload.get("role", "user")),
+                },
+            )
+            if response is not None:
+                self._send_json(response.payload, response.status_code)
+            return
         user = create_managed_user(
             username=str(payload.get("username", "")),
             password=str(payload.get("password", "")),
@@ -373,6 +423,21 @@ class ContractHandler(BaseHTTPRequestHandler):
         self, session: ActiveSession, user_id: str
     ) -> None:
         payload = self._read_json(max_bytes=64 * 1024)
+        if remote_auth_enabled():
+            response = self._remote_admin_call(
+                "PATCH",
+                f"/v1/admin/users/{user_id}",
+                payload={
+                    "username": str(payload.get("username", "")),
+                    "password": str(payload.get("password", "")) or None,
+                    "full_name": str(payload.get("full_name", "")),
+                    "email": str(payload.get("email", "")).strip() or None,
+                    "role": str(payload.get("role", "user")),
+                },
+            )
+            if response is not None:
+                self._send_json(response.payload, response.status_code)
+            return
         user = update_managed_user(
             user_id=user_id,
             actor_user_id=session.user.id,
@@ -395,6 +460,15 @@ class ContractHandler(BaseHTTPRequestHandler):
         is_active = payload.get("is_active")
         if not isinstance(is_active, bool):
             raise ValueError("Informe se o usuário deve ficar ativo ou desativado.")
+        if remote_auth_enabled():
+            response = self._remote_admin_call(
+                "PATCH",
+                f"/v1/admin/users/{user_id}/status",
+                payload={"is_active": is_active},
+            )
+            if response is not None:
+                self._send_json(response.payload, response.status_code)
+            return
         user = set_managed_user_active(
             user_id=user_id,
             actor_user_id=session.user.id,
@@ -405,11 +479,20 @@ class ContractHandler(BaseHTTPRequestHandler):
     def _handle_admin_user_delete(
         self, session: ActiveSession, user_id: str
     ) -> None:
+        if remote_auth_enabled():
+            response = self._remote_admin_call(
+                "DELETE",
+                f"/v1/admin/users/{user_id}",
+            )
+            if response is not None:
+                self._send_json(response.payload, response.status_code)
+            return
         delete_managed_user(
             user_id=user_id,
             actor_user_id=session.user.id,
         )
         self._send_json({"deleted": True})
+
     def _handle_login(self) -> None:
         client_key = self._client_key()
         if not LOGIN_LIMITER.allowed(client_key):
@@ -426,7 +509,19 @@ class ContractHandler(BaseHTTPRequestHandler):
             self._send_error("Usuário ou senha inválidos.", HTTPStatus.UNAUTHORIZED)
             return
         try:
-            user = authenticate_user(username, password)
+            if remote_auth_enabled():
+                remote_result = remote_login(username, password)
+                user = remote_result.user
+            else:
+                user = authenticate_user(username, password)
+        except RemoteAPIError as exc:
+            if exc.status_code in {
+                HTTPStatus.UNAUTHORIZED,
+                HTTPStatus.TOO_MANY_REQUESTS,
+            }:
+                LOGIN_LIMITER.record_failure(client_key)
+            self._send_error(str(exc), exc.status_code)
+            return
         except InvalidCredentials:
             LOGIN_LIMITER.record_failure(client_key)
             self._send_error("Usuário ou senha inválidos.", HTTPStatus.UNAUTHORIZED)
@@ -440,14 +535,18 @@ class ContractHandler(BaseHTTPRequestHandler):
             return
 
         LOGIN_LIMITER.clear(client_key)
-        issued = issue_session(user.id)
-        try:
-            cleanup_expired_sessions()
-        except Exception:
-            # A limpeza é de manutenção e não deve impedir um login válido.
-            if getattr(self.server, "verbose", False):
-                self.log_error("Não foi possível limpar sessões antigas")
-        max_age = session_duration_seconds()
+        if remote_auth_enabled():
+            issued = remote_result.issued_session
+            max_age = remote_result.max_age
+        else:
+            issued = issue_session(user.id)
+            try:
+                cleanup_expired_sessions()
+            except Exception:
+                # A limpeza é de manutenção e não deve impedir um login válido.
+                if getattr(self.server, "verbose", False):
+                    self.log_error("Não foi possível limpar sessões antigas")
+            max_age = session_duration_seconds()
         self._send_json(
             {
                 "authenticated": True,
@@ -469,7 +568,15 @@ class ContractHandler(BaseHTTPRequestHandler):
         if not self._valid_csrf(session):
             self._send_error("Validação de segurança inválida.", HTTPStatus.FORBIDDEN)
             return
-        revoke_session(self._cookie_value(SESSION_COOKIE))
+        session_token = self._cookie_value(SESSION_COOKIE)
+        try:
+            if remote_auth_enabled():
+                remote_logout(session_token, self._cookie_value(CSRF_COOKIE))
+            else:
+                revoke_session(session_token)
+        except RemoteAPIError as exc:
+            self._send_error(str(exc), exc.status_code)
+            return
         self._send_json(
             {"authenticated": False}, extra_headers=self._clear_cookie_headers()
         )

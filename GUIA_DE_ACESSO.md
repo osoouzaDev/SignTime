@@ -13,21 +13,16 @@
 
 ## Configuração
 
-No desenvolvimento, mantenha o arquivo `.env` na raiz do projeto. Para o
-executável local, mantenha o `.env` ao lado de `SignTime.exe`.
+No desenvolvimento, mantenha o arquivo `.env` na raiz do projeto. Ele pode
+conter a conexão direta com o banco para executar os testes locais.
 
-Use `.env.example` como referência:
+O executável distribuído não recebe `DATABASE_URL`. Ele usa somente o endereço
+HTTPS público do backend, incorporado pelo comando `scripts/build_portable.py`.
+A senha do PostgreSQL permanece exclusivamente nas variáveis secretas da
+hospedagem.
 
-```text
-DATABASE_URL=postgresql+psycopg://usuario:senha@host:5432/postgres
-DATABASE_SSLMODE=require
-COOKIE_SECURE=false
-SESSION_DURATION_HOURS=8
-```
-
-Em um servidor online com HTTPS, configure `COOKIE_SECURE=true` nas variáveis
-do ambiente de hospedagem. Não publique nem envie o arquivo `.env` junto com o
-código.
+Use `.env.example` como referência no desenvolvimento. Para publicar e gerar o
+arquivo portátil, siga `IMPLANTACAO_BACKEND.md`.
 
 ## Criar o primeiro usuário
 
@@ -58,6 +53,6 @@ As tabelas ficam no schema privado `private`, sem acesso direto para as funçõe
 
 ## Observação sobre distribuição
 
-Não distribua para usuários finais um executável acompanhado das credenciais de
-administrador do PostgreSQL. Para uso por várias pessoas ou máquinas, hospede o
-SignTime como aplicação web e mantenha `DATABASE_URL` somente no servidor.
+O `SignTime.exe` portátil conhece apenas a URL HTTPS da API. Login, sessões e
+administração de usuários são processados no backend hospedado, que é o único
+componente autorizado a receber `DATABASE_URL`.

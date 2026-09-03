@@ -1,0 +1,1 @@
+"""Backend hospedado do SignTime."""
